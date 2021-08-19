@@ -34,11 +34,22 @@ export default createMacro(({ references, babel, state }) => {
 
       const quasis = [];
       const expressions = [];
+
       for (const part of parts) {
         const expr = placeholders.get(part);
         if (expr) expressions.push(expr);
         else quasis.push(t.templateElement({ raw: part }));
       }
+
+      // if this is `${expr}` then unwrap and
+      // return the expression directly
+      if (
+        expressions.length === 1 &&
+        quasis.every((q) => !q.value.raw.trim())
+      ) {
+        return expressions[0];
+      }
+
       return t.templateLiteral(quasis, expressions);
     }
     // fallback

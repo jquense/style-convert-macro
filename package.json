@@ -10,7 +10,7 @@
   "author": "Jason Quense",
   "license": "MIT",
   "scripts": {
-    "build": "4c build src",
+    "build": "4c build src --type-dir types",
     "format": "4c format src './*'",
     "lint": "4c lint src './*'",
     "prepublishOnly": "yarn run build",
@@ -47,6 +47,7 @@
     "@4c/jest-preset": "^1.4.5",
     "@4c/prettier-config": "^1.1.0",
     "@4c/tsconfig": "^0.4.0",
+    "@babel/core": "^7.15.0",
     "@babel/preset-typescript": "^7.8.3",
     "@types/babel-plugin-macros": "^2.8.5",
     "@types/node": "*",

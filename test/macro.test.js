@@ -1,9 +1,9 @@
+import { transform } from '@babel/core';
+import plugin from 'babel-plugin-macros';
 import {
   prettierFormatter,
   unstringSnapshotSerializer,
 } from 'babel-plugin-tester';
-import plugin from 'babel-plugin-macros';
-import { transform } from '@babel/core';
 
 expect.addSnapshotSerializer(unstringSnapshotSerializer);
 
@@ -63,6 +63,32 @@ const styles = {
       },
     },
   ],
+};
+
+`);
+  });
+
+  it('should not add unnecessary strings', () => {
+    const code = run(
+      `
+        import css from '../src/macro'
+  
+        const styles = css\`
+          .btn {
+            color: \${theme('blue', 'var(--theme-color)')};
+          }
+
+        \`
+      `,
+    );
+
+    expect(code).toMatchInlineSnapshot(`
+'use strict';
+
+const styles = {
+  '.btn': {
+    color: theme('blue', 'var(--theme-color)'),
+  },
 };
 
 `);
