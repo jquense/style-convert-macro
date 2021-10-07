@@ -93,4 +93,60 @@ const styles = {
 
 `);
   });
+
+  it('should handle rule body', () => {
+    const code = run(
+      `
+        import css from '../src/macro'
+  
+        const styles = css\`
+          color: \${color};
+          background: \${bgColor};
+          border: 1px solid transparent;
+          border-color: \${bgColor};
+      
+          &:hover {
+            filter: brightness(85%);
+          }
+      
+          &:disabled,
+          &:global(.disabled) {
+            color: \${color};
+            background: \${bgColor};
+            border-color: \${bgColor};
+          }
+      
+          // IDK but this is how bootstrap structures the state precendence, so copying
+          &:not(:disabled):not(:global(.disabled)):active,
+          &:not(:disabled):not(:global(.disabled)).active {
+            filter: brightness(75%);
+          }
+        \`
+      `,
+    );
+
+    expect(code).toMatchInlineSnapshot(`
+'use strict';
+
+const styles = {
+  'color': color,
+  'background': bgColor,
+  'border': '1px solid transparent',
+  'borderColor': bgColor,
+  '&:hover': {
+    filter: 'brightness(85%)',
+  },
+  '&:disabled,\\n          &:global(.disabled)': {
+    color: color,
+    background: bgColor,
+    borderColor: bgColor,
+  },
+  '&:not(:disabled):not(:global(.disabled)):active,\\n          &:not(:disabled):not(:global(.disabled)).active':
+    {
+      filter: 'brightness(75%)',
+    },
+};
+
+`);
+  });
 });

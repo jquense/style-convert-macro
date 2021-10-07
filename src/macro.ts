@@ -82,7 +82,13 @@ export default createMacro(({ references, babel, state }) => {
       }
     });
 
-    const root = parse(text, { from: state.filename });
+    let root;
+    try {
+      root = parse(text, { from: state.filename });
+    } catch (err: any) {
+      throw new MacroError(err);
+    }
+
     const obj = postcssJs.objectify(root);
 
     path.replaceWith(buildAst(obj, placeholders));
