@@ -149,4 +149,61 @@ const styles = {
 
 `);
   });
+
+  it('should not add unnecessary strings', () => {
+    const code = run(
+      `
+        import css from '../src/macro'
+  
+        const styles = css\`
+          .btn {
+            color: \${theme('blue', 'var(--theme-color)')};
+          }
+
+        \`
+      `,
+    );
+
+    expect(code).toMatchInlineSnapshot(`
+'use strict';
+
+const styles = {
+  '.btn': {
+    color: theme('blue', 'var(--theme-color)'),
+  },
+};
+
+`);
+  });
+
+  it('should handle interpolation in properties', () => {
+    const code = run(
+      `
+        import css from '../src/macro'
+        const color = 'color';
+        const styles = css\`
+          .btn {
+            @apply background-\${color};
+
+            background\${color}: red;
+            background-\${color}: red;
+          }
+        \`
+      `,
+    );
+
+    expect(code).toMatchInlineSnapshot(`
+'use strict';
+
+const color = 'color';
+const styles = {
+  '.btn': {
+    [\`@apply background-\${color}\`]: 'true',
+    [\`background\${color}\`]: 'red',
+    [\`background\${color}\`]: 'red',
+  },
+};
+
+`);
+  });
 });

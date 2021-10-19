@@ -14,12 +14,14 @@ export default createMacro(({ references, babel, state }) => {
     }
     if (obj && typeof obj === 'object') {
       return t.objectExpression(
-        Object.entries(obj).map(([key, value]) =>
-          t.objectProperty(
-            t.stringLiteral(key),
+        Object.entries(obj).map(([key, value]) => {
+          const keyNode = buildAst(key, placeholders);
+          return t.objectProperty(
+            keyNode,
             buildAst(value, placeholders),
-          ),
-        ),
+            keyNode.type === 'TemplateLiteral',
+          );
+        }),
       );
     }
     if (obj == null) {
@@ -29,14 +31,16 @@ export default createMacro(({ references, babel, state }) => {
       return t.numericLiteral(obj);
     }
     if (typeof obj === 'string') {
-      const parts = obj.split(/(MACRO_PH_\d+)/gm);
+      // if the placeholder is in a key it will get camel cased so don't
+      // match on case
+      const parts = obj.split(/(MACRO_PH_\d+)/gim);
       if (parts.length === 1) return t.stringLiteral(obj);
 
       const quasis = [];
       const expressions = [];
 
       for (const part of parts) {
-        const expr = placeholders.get(part);
+        const expr = placeholders.get(part.toUpperCase());
         if (expr) expressions.push(expr);
         else quasis.push(t.templateElement({ raw: part }));
       }
