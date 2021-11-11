@@ -150,16 +150,18 @@ const styles = {
 `);
   });
 
-  it('should not add unnecessary strings', () => {
+  it('should handle interpolation in properties', () => {
     const code = run(
       `
         import css from '../src/macro'
-  
+        import color from 'colors'
         const styles = css\`
           .btn {
-            color: \${theme('blue', 'var(--theme-color)')};
-          }
+            @apply background-\${color};
 
+            background\${color}: red;
+            background-\${color}: red;
+          }
         \`
       `,
     );
@@ -167,16 +169,24 @@ const styles = {
     expect(code).toMatchInlineSnapshot(`
 'use strict';
 
+var _colors = _interopRequireDefault(require('colors'));
+
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : { default: obj };
+}
+
 const styles = {
   '.btn': {
-    color: theme('blue', 'var(--theme-color)'),
+    [\`@apply background-\${_colors.default}\`]: 'true',
+    [\`background\${_colors.default}\`]: 'red',
+    [\`background\${_colors.default}\`]: 'red',
   },
 };
 
 `);
   });
 
-  it('should handle interpolation in properties', () => {
+  it('should statically eval', () => {
     const code = run(
       `
         import css from '../src/macro'
@@ -198,9 +208,44 @@ const styles = {
 const color = 'color';
 const styles = {
   '.btn': {
-    [\`@apply background-\${color}\`]: 'true',
-    [\`background\${color}\`]: 'red',
-    [\`background\${color}\`]: 'red',
+    '@apply background-color': 'true',
+    'backgroundcolor': 'red',
+    'backgroundColor': 'red',
+  },
+};
+
+`);
+  });
+
+  it('should handle nested marcos', () => {
+    const code = run(
+      `
+        import css from '../src/macro'
+  
+        const styles = css\`
+          .btn {
+            color: red;
+
+            $\{css\`
+              @supports (color: red) {
+                height: 10px;
+              }
+            \`}
+          }
+
+        \`
+      `,
+    );
+
+    expect(code).toMatchInlineSnapshot(`
+'use strict';
+
+const styles = {
+  '.btn': {
+    'color': 'red',
+    '@supports (color: red)': {
+      height: '10px',
+    },
   },
 };
 

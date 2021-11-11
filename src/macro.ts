@@ -1,9 +1,11 @@
-import { Expression } from '@babel/types';
+import type { NodePath } from '@babel/core';
+import type { Expression } from '@babel/types';
 import { MacroError, createMacro } from 'babel-plugin-macros';
 // @ts-ignore
 import postcssJs from 'postcss-js';
 import { parse } from 'postcss-scss';
 
+const SEEN = Symbol('css macro seen');
 let i = 0;
 export default createMacro(({ references, babel, state }) => {
   const { types: t } = babel;
@@ -60,8 +62,11 @@ export default createMacro(({ references, babel, state }) => {
     return t.stringLiteral(String(obj));
   }
 
-  for (let path of references.default) {
-    path = path.parentPath!;
+  function buildTemplateString(
+    path: NodePath,
+    placeholders: Map<string, any>,
+    tagName: string,
+  ) {
     if (!path.isTaggedTemplateExpression()) {
       throw new MacroError('Must use a tagged template');
     }
@@ -70,7 +75,6 @@ export default createMacro(({ references, babel, state }) => {
     const quasi = quasiPath.node;
     const exprPath = quasiPath.get('expressions');
 
-    const placeholders = new Map<string, any>();
     let text = '';
     // eslint-disable-next-line no-loop-func
     quasi.quasis.forEach((tmplNode, idx) => {
@@ -80,11 +84,34 @@ export default createMacro(({ references, babel, state }) => {
       text += raw;
 
       if (expr) {
-        const ph = `MACRO_PH_${i++}`;
-        text += ph;
-        placeholders.set(ph, expr.node);
+        const evaled = expr.evaluate();
+
+        if (evaled.confident) {
+          text += evaled.value;
+        } else if (
+          expr.isTaggedTemplateExpression() &&
+          (expr.get('tag').node as any).name === tagName
+        ) {
+          text += buildTemplateString(expr, placeholders, tagName);
+        } else {
+          const ph = `MACRO_PH_${i++}`;
+          text += ph;
+          placeholders.set(ph, expr.node);
+        }
       }
     });
+
+    return text;
+  }
+
+  function objectify(path: NodePath) {
+    if (!path.isTaggedTemplateExpression()) {
+      throw new MacroError('Must use a tagged template');
+    }
+
+    const placeholders = new Map<string, any>();
+    const tagName = (path.get('tag').node as any).name;
+    const text = buildTemplateString(path, placeholders, tagName);
 
     let root;
     try {
@@ -94,7 +121,20 @@ export default createMacro(({ references, babel, state }) => {
     }
 
     const obj = postcssJs.objectify(root);
+    // @ts-ignore
+    // eslint-disable-next-line no-param-reassign
+    path[SEEN] = true;
+    return buildAst(obj, placeholders);
+  }
 
-    path.replaceWith(buildAst(obj, placeholders));
+  for (let path of references.default) {
+    path = path.parentPath!;
+
+    // @ts-ignore
+    if (path[SEEN]) {
+      continue;
+    }
+
+    path.replaceWith(objectify(path));
   }
 });
