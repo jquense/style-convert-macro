@@ -1,3 +1,14 @@
+# [1.1.0](https://github.com/jquense/css-in-js-macro/compare/v1.0.3...v1.1.0) (2021-11-11)
+
+
+### Features
+
+* allow nested macro calls ([86ed2cf](https://github.com/jquense/css-in-js-macro/commit/86ed2cf3e7a4c9696530af71c9e43c171e12548b))
+
+
+
+
+
 ## [1.0.3](https://github.com/jquense/css-in-js-macro/compare/v1.0.2...v1.0.3) (2021-10-19)
 
 
